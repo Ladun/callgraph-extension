@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Call Graph Visualizer</title>
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <!-- Cytoscape.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+  <style>
+    :root {
+      --bg-color: #22272e;
+      --card-bg: rgba(45, 51, 59, 0.85);
+      --border-color: #444c56;
+      --text-color: #adbac7;
+      --accent-color: #539bf5;
+      --accent-hover: #79c0ff;
+      --node-local: #2d333b;
+      --node-external: #2d333b;
+      --edge-color: #444c56;
+      --shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    #cy {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+
+    /* Glassmorphism Control Panel */
+    .control-panel {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 10;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 280px;
+    }
+
+    .panel-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin: 0 0 4px 0;
+      letter-spacing: -0.025em;
+      color: #adbac7;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      background: #373e47;
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    button:hover {
+      background: #444c56;
+      border-color: #768390;
+    }
+
+    button.primary {
+      background: var(--accent-color);
+      border-color: var(--accent-color);
+      color: #22272e;
+    }
+
+    button.primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    button.danger {
+      background: #da3633;
+      border-color: #f85149;
+    }
+
+    button.danger:hover {
+      background: #f85149;
+      border-color: #f85149;
+    }
+
+    .status-info {
+      font-size: 11px;
+      color: #768390;
+      background: #1c2128;
+      padding: 8px;
+      border-radius: 6px;
+      line-height: 1.4;
+      border: 1px solid var(--border-color);
+    }
+
+    /* Node details tooltip */
+    .detail-panel {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 10;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+      width: 320px;
+      display: none;
+    }
+
+    .detail-header {
+      font-size: 14px;
+      font-weight: 600;
+      color: #539bf5;
+      margin-bottom: 6px;
+    }
+
+    .detail-body {
+      font-size: 12px;
+      color: #adbac7;
+      word-break: break-all;
+      line-height: 1.5;
+    }
+
+    /* Connection instruction overlay */
+    .overlay-toast {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      background: rgba(79, 70, 229, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(8px);
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: var(--shadow);
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translate(-50%, -10px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Panel Open Button (hidden by default) -->
+  <button id="openPanelBtn" onclick="togglePanel(true)" style="position: absolute; top: 20px; left: 20px; z-index: 9; background: var(--card-bg); border: 1px solid var(--border-color); display: none; padding: 10px 14px; font-size: 11px; font-weight: 600; cursor: pointer; border-radius: 8px; box-shadow: var(--shadow); color: var(--text-color); gap: 4px; align-items: center; transition: all 0.2s ease;">
+    ⚙️ 컨트롤 패널 열기
+  </button>
+
+  <!-- Controls -->
+  <div class="control-panel" id="controlPanel" style="display: flex;">
+    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 2px;">
+      <div class="panel-title">Python Call Graph</div>
+      <button onclick="togglePanel(false)" style="background: none; border: none; padding: 0 4px; font-size: 18px; cursor: pointer; color: #768390; font-weight: bold; line-height: 1; display: inline-block;" onmouseover="this.style.color='#adbac7'" onmouseout="this.style.color='#768390'">&times;</button>
+    </div>
+    
+    <div class="btn-group">
+      <button onclick="changeLayout('breadthfirst')" class="primary">계층 정렬</button>
+      <button onclick="changeLayout('cose')">분산 정렬</button>
+      <button onclick="fitView()">화면 맞춤</button>
+    </div>
+
+    <div style="border-bottom: 1px solid var(--border-color); margin: 4px 0;"></div>
+
+    <div class="btn-group">
+      <button id="deleteBtn" onclick="deleteSelected()" class="danger" disabled>노드 삭제</button>
+      <button id="connectBtn" onclick="toggleConnectMode()">노드 연결</button>
+    </div>
+
+    <div class="status-info" id="statusBox">
+      - <b>노드 더블 클릭:</b> 실제 소스 코드로 이동<br>
+      - <b>노드 클릭:</b> 상세 정보 확인<br>
+      - <b>우클릭 추가:</b> 파이썬 코드 창에서 우클릭 시 해당 함수 노드가 현재 그래프에 실시간 추가됩니다.
+    </div>
+  </div>
+
+  <!-- Detail Information -->
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-header" id="detailName">Function Name</div>
+    <div class="detail-body" id="detailText">Details...</div>
+  </div>
+
+  <!-- Connection Toast -->
+  <div class="overlay-toast" id="toast">연결할 대상(Target) 노드를 클릭하세요.</div>
+
+  <!-- Graph Canvas -->
+  <div id="cy"></div>
+
+  <script>
+    const vscode = acquireVsCodeApi();
+    let cy = null;
+
+    let selectedNode = null;
+    let connectMode = false;
+    let connectSource = null;
+
+    // 초기 상태 수신 대기
+    window.addEventListener('message', event => {
+      const message = event.data;
+      switch (message.type) {
+        case 'setData':
+          initGraph(message.nodes, message.edges);
+          break;
+        case 'addNodes':
+          addNodesToGraph(message.nodes, message.edges);
+          break;
+      }
+    });
+
+    // 웹뷰 로드 완료를 Extension Host에 보고
+    vscode.postMessage({ type: 'ready' });
+
+    function initGraph(nodes, edges) {
+      const cyElements = [];
+
+      // 노드 변환 (일반 함수 노드 + 부모 그룹 노드)
+      nodes.forEach(node => {
+        const cyNode = {
+          data: {
+            id: node.id,
+            label: node.label,
+            detail: node.detail,
+            uri: node.uri,
+            range: node.range,
+            isExternal: node.isExternal,
+            isGroup: node.isGroup,
+            type: node.type
+          }
+        };
+        if (node.parent) {
+          cyNode.data.parent = node.parent;
+        }
+        cyElements.push(cyNode);
+      });
+
+      // 엣지 변환
+      edges.forEach(edge => {
+        cyElements.push({
+          data: {
+            id: edge.id,
+            source: edge.source,
+            target: edge.target,
+            callRanges: edge.callRanges
+          }
+        });
+      });
+
+      cy = cytoscape({
+        container: document.getElementById('cy'),
+        elements: cyElements,
+        wheelSensitivity: 0.15, // 휠 줌 감도 최적화 (기본값 1.0에서 대폭 낮춰 부드럽게 스크롤)
+        userPanningEnabled: false, // 왼쪽 클릭 드래그 패닝 비활성화 (휠 클릭 드래그로만 이동하게 제어)
+        boxSelectionEnabled: false, // 왼쪽 클릭 드래그 다중선택 비활성화
+        style: [
+          // 1. 일반 자식 함수 노드 스타일 (GitHub Dark Dimmed 스타일)
+          {
+            selector: 'node[!isGroup]',
+            style: {
+              'label': 'data(label)',
+              'text-valign': 'center',
+              'text-halign': 'center',
+              'color': '#adbac7',
+              'font-size': '11px',
+              'font-family': 'Inter, sans-serif',
+              'font-weight': '500',
+              'background-color': '#2d333b',
+              'width': '120px',
+              'height': '38px',
+              'shape': 'round-rectangle',
+              'border-width': '1.5px',
+              'border-color': function(ele) {
+                return ele.data('isExternal') ? '#444c56' : '#539bf5'; // 로컬은 깃허브 블루, 외부는 딤드 보더
+              },
+              'overlay-padding': '3px',
+              'transition-property': 'background-color, border-color',
+              'transition-duration': '0.15s'
+            }
+          },
+          // 2. 부모 그룹 노드 전체 (Compound Nodes) 공통 스타일 (크기 축소 및 내부 정렬)
+          {
+            selector: 'node[?isGroup]',
+            style: {
+              'background-opacity': 1.0, // 불투명하게 채워 자식 노드와 확실한 대비 형성
+              'label': 'data(label)',
+              'text-valign': 'top',
+              'text-halign': 'center', // 가로 중앙 정렬로 변경하여 텍스트 길이에 무관하게 내부 상단 안착
+              'color': '#768390',
+              'font-size': '9.5px', // 더 깔끔하고 미니멀하게 글자 크기 축소
+              'font-family': 'Inter, sans-serif',
+              'font-weight': '600',
+              'border-width': '1.5px', // 테두리를 명확하게
+              'padding': '24px', // 패딩을 적절히 조율하여 내부 자식 노드와의 여백 확보
+              'text-margin-y': '12px' // 윗선 테두리 아래로 깔끔하게 안착 (상자 내부)
+            }
+          },
+          // 3. 클래스 소속 부모 노드 스타일 커스텀 (GitHub Orange 포인트)
+          {
+            selector: 'node[type="class"]',
+            style: {
+              'color': '#f69e5d',
+              'border-color': 'rgba(246, 158, 93, 0.45)', // 기존 오렌지 테두리 유지
+              'background-color': '#1a1e24', // 어둡고 불투명한 배경색으로 시선 분산 방지
+              'border-style': 'solid'
+            }
+          },
+          // 4. 파일 소속 부모 노드 스타일 커스텀 (차분한 무채색 Slate/Zinc)
+          {
+            selector: 'node[type="file"]',
+            style: {
+              'color': '#adbac7',
+              'border-color': '#444c56', // 기존 그레이 테두리 유지
+              'background-color': '#14181d', // 한층 더 어두운 불투명 배경색으로 파일 경계 명확화
+              'border-style': 'dashed'
+            }
+          },
+          {
+            selector: 'node:selected',
+            style: {
+              'border-width': '2.5px',
+              'border-color': '#79c0ff',
+              'background-color': '#22272e'
+            }
+          },
+          {
+            selector: 'edge',
+            style: {
+              'width': 1.8,
+              'line-color': 'rgba(118, 131, 144, 0.3)',
+              'target-arrow-color': 'rgba(118, 131, 144, 0.35)',
+              'target-arrow-shape': 'triangle',
+              'curve-style': 'bezier',
+              'arrow-scale': 1.0
+            }
+          },
+          {
+            selector: 'edge:selected',
+            style: {
+              'width': 3,
+              'line-color': '#539bf5',
+              'target-arrow-color': '#539bf5'
+            }
+          }
+        ],
+        layout: {
+          name: 'breadthfirst',
+          directed: true,
+          padding: 50,
+          spacingFactor: 1.25
+        }
+      });
+
+      // 휠클릭(가운데 버튼) 드래그로 화면 패닝(이동) 수동 구현 (Delta Panning 구조 적용)
+      const cyContainer = document.getElementById('cy');
+      let isPanning = false;
+      let lastPos = { x: 0, y: 0 };
+
+      cyContainer.addEventListener('mousedown', function(e) {
+        if (e.button === 1) { // 마우스 휠클릭 (가운데 버튼)
+          isPanning = true;
+          lastPos = { x: e.clientX, y: e.clientY };
+          // 자동 스크롤 팝업 및 기본 드래그 기능 차단
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }, true); // 캡처링 단계에서 강제로 포착
+
+      window.addEventListener('mousemove', function(e) {
+        if (isPanning) {
+          // 마우스 가운데 버튼(buttons 값 4)이 여전히 눌려있는지 실시간 감시 (안전장치)
+          if (!(e.buttons & 4)) {
+            isPanning = false;
+            return;
+          }
+          
+          const dx = e.clientX - lastPos.x;
+          const dy = e.clientY - lastPos.y;
+          
+          // 매 틱마다 panBy로 델타 값을 흘려주어 줌 배율이 보정된 극도의 부드러운 이동 제공 (Jitter 원천 차단)
+          cy.panBy({ x: dx, y: dy });
+          
+          // 마지막 마우스 위치 갱신
+          lastPos = { x: e.clientX, y: e.clientY };
+          
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }, true);
+
+      window.addEventListener('mouseup', function(e) {
+        if (isPanning && e.button === 1) {
+          isPanning = false;
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }, true);
+
+      setupEvents();
+    }
+
+    function addNodesToGraph(newNodes, newEdges) {
+      if (!cy) return;
+
+      // [소속 꼬임 방지] 1단계: 부모 그룹 노드들을 먼저 삽입
+      newNodes.forEach(node => {
+        if (node.isGroup && cy.getElementById(node.id).length === 0) {
+          const cyNode = {
+            group: 'nodes',
+            data: {
+              id: node.id,
+              label: node.label,
+              detail: node.detail,
+              uri: node.uri,
+              range: node.range,
+              isExternal: node.isExternal,
+              isGroup: node.isGroup,
+              type: node.type
+            }
+          };
+          if (node.parent) {
+            cyNode.data.parent = node.parent;
+          }
+          cy.add(cyNode);
+        }
+      });
+
+      // [소속 꼬임 방지] 2단계: 일반 자식 함수 노드들을 삽입 (부모 매핑 보장)
+      newNodes.forEach(node => {
+        if (!node.isGroup && cy.getElementById(node.id).length === 0) {
+          const cyNode = {
+            group: 'nodes',
+            data: {
+              id: node.id,
+              label: node.label,
+              detail: node.detail,
+              uri: node.uri,
+              range: node.range,
+              isExternal: node.isExternal,
+              isGroup: node.isGroup,
+              type: node.type
+            }
+          };
+          if (node.parent) {
+            cyNode.data.parent = node.parent;
+          }
+          cy.add(cyNode);
+        }
+      });
+
+      newEdges.forEach(edge => {
+        if (cy.getElementById(edge.id).length === 0) {
+          cy.add({
+            group: 'edges',
+            data: {
+              id: edge.id,
+              source: edge.source,
+              target: edge.target,
+              callRanges: edge.callRanges
+            }
+          });
+        }
+      });
+
+      // 새로운 노드가 들어왔으므로 레이아웃을 다시 실행하여 정렬
+      cy.layout({
+        name: 'breadthfirst',
+        directed: true,
+        padding: 50,
+        animate: true,
+        animationDuration: 500
+      }).run();
+    }
+
+    function setupEvents() {
+      // 노드 클릭 시 디테일 패널 노출
+      cy.on('tap', 'node', function(evt) {
+        const node = evt.target;
+        selectedNode = node;
+        
+        // 버튼 활성화
+        document.getElementById('deleteBtn').disabled = false;
+
+        // 연결 모드 처리
+        if (connectMode) {
+          handleConnection(node);
+          return;
+        }
+
+        const data = node.data();
+
+        // 1. 만약 부모 그룹 노드를 클릭했다면
+        if (data.isGroup) {
+          document.getElementById('detailName').innerText = data.label;
+          document.getElementById('detailText').innerHTML = `
+            <strong>유형:</strong> ${data.type === 'file' ? '파이썬 소스 파일 (.py)' : '클래스 (Class)'}<br>
+            <strong>설명:</strong> 이 경계 상자 내부의 함수들은 본 영역에 소속되어 있습니다.
+          `;
+          document.getElementById('detailPanel').style.display = 'block';
+          return;
+        }
+
+        // 2. 일반 함수 노드를 클릭했다면
+        const pathLabel = data.uri ? data.uri.split('/').pop() : 'Unknown';
+        
+        document.getElementById('detailName').innerText = data.label;
+        document.getElementById('detailText').innerHTML = `
+          <strong>위치:</strong> ${decodeURIComponent(pathLabel)} (Line: ${data.range.startLine + 1})<br>
+          <strong>LSP 상세:</strong> ${data.detail || '없음'}<br>
+          <strong>모듈 타입:</strong> ${data.isExternal ? '외부 라이브러리 / 빌트인' : '프로젝트 내부 함수'}
+        `;
+        document.getElementById('detailPanel').style.display = 'block';
+      });
+
+      // 엣지 클릭 시 호출 정보 패널 노출
+      cy.on('tap', 'edge', function(evt) {
+        const edge = evt.target;
+        selectedNode = edge;
+
+        // 버튼 활성화
+        document.getElementById('deleteBtn').disabled = false;
+
+        const data = edge.data();
+        const sourceLabel = edge.source().data('label');
+        const targetLabel = edge.target().data('label');
+
+        let detailHtml = `
+          <strong>흐름:</strong> <code>${sourceLabel}</code> ➔ <code>${targetLabel}</code><br>
+        `;
+
+        if (data.callRanges && data.callRanges.length > 0) {
+          detailHtml += `<strong>호출 위치 (클릭 시 이동):</strong><br><div style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap;">`;
+          data.callRanges.forEach((range) => {
+            detailHtml += `
+              <a href="#" 
+                 style="color: #38bdf8; text-decoration: underline; background: rgba(56,189,248,0.1); padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;"
+                 onclick="jumpToLocation('${edge.source().data('uri')}', ${range.startLine}, ${range.startCharacter}, ${range.endLine}, ${range.endCharacter}); return false;">
+                Line ${range.startLine + 1}
+              </a>
+            `;
+          });
+          detailHtml += `</div>`;
+        } else {
+          detailHtml += `<strong>호출 위치:</strong> 정보 없음 (수동 연결됨)`;
+        }
+
+        document.getElementById('detailName').innerText = 'Connection Flow';
+        document.getElementById('detailText').innerHTML = detailHtml;
+        document.getElementById('detailPanel').style.display = 'block';
+      });
+
+      // 캔버스 빈 곳 클릭 시 선택 해제 및 패널 닫기
+      cy.on('tap', function(evt) {
+        if (evt.target === cy) {
+          selectedNode = null;
+          document.getElementById('deleteBtn').disabled = true;
+          document.getElementById('detailPanel').style.display = 'none';
+          if (connectMode) {
+            cancelConnectMode();
+          }
+        }
+      });
+
+      // 노드 더블클릭 시 해당 코드 위치로 에디터 이동
+      cy.on('dbltap', 'node', function(evt) {
+        const node = evt.target;
+        const data = node.data();
+        if (data.isGroup) return; // 부모 노드는 소스 점프 스킵
+        if (data.uri && data.range) {
+          jumpToLocation(data.uri, data.range.startLine, data.range.startCharacter, data.range.endLine, data.range.endCharacter);
+        }
+      });
+
+      // 엣지 더블클릭 시 첫 번째 호출 위치로 에디터 이동
+      cy.on('dbltap', 'edge', function(evt) {
+        const edge = evt.target;
+        const data = edge.data();
+        if (data.callRanges && data.callRanges.length > 0) {
+          const range = data.callRanges[0];
+          jumpToLocation(edge.source().data('uri'), range.startLine, range.startCharacter, range.endLine, range.endCharacter);
+        }
+      });
+    }
+
+    // 소스 코드로 위치 점프 통신 래퍼
+    function jumpToLocation(uri, startLine, startCharacter, endLine, endCharacter) {
+      vscode.postMessage({
+        type: 'goToSource',
+        payload: {
+          uri: uri,
+          range: {
+            startLine: startLine,
+            startCharacter: startCharacter,
+            endLine: endLine,
+            endCharacter: endCharacter
+          }
+        }
+      });
+    }
+
+    // 레이아웃 변경 기능
+    function changeLayout(layoutName) {
+      if (!cy) return;
+      cy.layout({
+        name: layoutName,
+        animate: true,
+        animationDuration: 600,
+        padding: 50
+      }).run();
+    }
+
+    // 화면 크기에 맞춤
+    function fitView() {
+      if (!cy) return;
+      cy.fit(null, 50);
+    }
+
+    // 선택 노드 삭제
+    function deleteSelected() {
+      if (!cy) return;
+      const selected = cy.$(':selected');
+      if (selected.length > 0) {
+        selected.remove();
+        document.getElementById('deleteBtn').disabled = true;
+        document.getElementById('detailPanel').style.display = 'none';
+      }
+    }
+
+    // 노드 수동 연결 기능 (에지 추가)
+    function toggleConnectMode() {
+      if (!cy) return;
+      
+      const currentSelected = cy.$('node:selected');
+      if (currentSelected.length === 0) {
+        alert('먼저 연결을 시작할 소스(Source) 노드를 마우스로 클릭하여 선택해 주세요.');
+        return;
+      }
+
+      connectSource = currentSelected[0];
+      connectMode = true;
+
+      // UI 상태 반영
+      document.getElementById('toast').style.display = 'block';
+      document.getElementById('connectBtn').classList.add('primary');
+      document.getElementById('connectBtn').innerText = '연결 취소';
+    }
+
+    function handleConnection(targetNode) {
+      if (!connectSource || !targetNode) return;
+
+      const sourceId = connectSource.id();
+      const targetId = targetNode.id();
+      const edgeId = `${sourceId}->${targetId}`;
+
+      // 중복 엣지 검증
+      if (cy.getElementById(edgeId).length === 0) {
+        cy.add({
+          group: 'edges',
+          data: {
+            id: edgeId,
+            source: sourceId,
+            target: targetId
+          }
+        });
+      }
+
+      cancelConnectMode();
+    }
+
+    function cancelConnectMode() {
+      connectMode = false;
+      connectSource = null;
+      document.getElementById('toast').style.display = 'none';
+      document.getElementById('connectBtn').classList.remove('primary');
+      document.getElementById('connectBtn').innerText = '노드 연결';
+    }
+
+    // 컨트롤 패널 토글 기능
+    function togglePanel(visible) {
+      const panel = document.getElementById('controlPanel');
+      const openBtn = document.getElementById('openPanelBtn');
+      if (visible) {
+        panel.style.display = 'flex';
+        openBtn.style.display = 'none';
+      } else {
+        panel.style.display = 'none';
+        openBtn.style.display = 'inline-flex';
+      }
+    }
+  </script>
+</body>
+</html>

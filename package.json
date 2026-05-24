@@ -1,0 +1,69 @@
+{
+  "name": "python-callgraph-extension",
+  "displayName": "Python Call Graph Visualizer",
+  "description": "Visualize Python function call graphs interactively using VS Code LSP Call Hierarchy API.",
+  "version": "0.1.0",
+  "publisher": "jungj",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Visualization",
+    "Programming Languages"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "commands": [
+      {
+        "command": "python-callgraph.viewFileGraph",
+        "title": "Generate: Call Graph",
+        "category": "Call Graph"
+      },
+      {
+        "command": "python-callgraph.addFunctionToGraph",
+        "title": "Generate: Add to Call Graph",
+        "category": "Call Graph"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "python-callgraph.addFunctionToGraph",
+          "when": "resourceLangId == python",
+          "group": "navigation"
+        },
+        {
+          "command": "python-callgraph.viewFileGraph",
+          "when": "resourceLangId == python",
+          "group": "navigation"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "python-callgraph.viewFileGraph",
+          "when": "resourceLangId == python",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "python-callgraph.viewFileGraph",
+          "when": "resourceLangId == python",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --platform=node --minify",
+    "watch": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --platform=node --watch"
+  },
+  "devDependencies": {
+    "@types/node": "^16.18.34",
+    "@types/vscode": "^1.75.0",
+    "esbuild": "^0.17.19",
+    "typescript": "^5.0.4"
+  }
+}
