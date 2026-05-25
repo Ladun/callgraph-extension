@@ -1,0 +1,9 @@
+.vscode/**
+.git/**
+.gitignore
+.vscodeignore
+tsconfig.json
+PUBLISH_GUIDE.md
+test_sample.py
+src/extension.ts
+node_modules/**

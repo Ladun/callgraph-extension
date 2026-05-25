@@ -1,9 +1,9 @@
 {
-  "name": "python-callgraph-extension",
-  "displayName": "Python Call Graph Visualizer",
-  "description": "Visualize Python function call graphs interactively using VS Code LSP Call Hierarchy API.",
-  "version": "0.1.0",
-  "publisher": "jungj",
+  "name": "callgraph-extension",
+  "displayName": "Call Graph Visualizer",
+  "description": "Visualize function call graphs interactively using VS Code LSP Call Hierarchy API.",
+  "version": "0.1.6",
+  "publisher": "ladun0",
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -16,12 +16,12 @@
   "contributes": {
     "commands": [
       {
-        "command": "python-callgraph.viewFileGraph",
+        "command": "callgraph.viewFileGraph",
         "title": "Generate: Call Graph",
         "category": "Call Graph"
       },
       {
-        "command": "python-callgraph.addFunctionToGraph",
+        "command": "callgraph.addFunctionToGraph",
         "title": "Generate: Add to Call Graph",
         "category": "Call Graph"
       }
@@ -29,27 +29,27 @@
     "menus": {
       "editor/context": [
         {
-          "command": "python-callgraph.addFunctionToGraph",
-          "when": "resourceLangId == python",
+          "command": "callgraph.addFunctionToGraph",
+          "when": "resourceLangId == python || resourceLangId == csharp",
           "group": "navigation"
         },
         {
-          "command": "python-callgraph.viewFileGraph",
-          "when": "resourceLangId == python",
+          "command": "callgraph.viewFileGraph",
+          "when": "resourceLangId == python || resourceLangId == csharp",
           "group": "navigation"
         }
       ],
       "editor/title": [
         {
-          "command": "python-callgraph.viewFileGraph",
-          "when": "resourceLangId == python",
+          "command": "callgraph.viewFileGraph",
+          "when": "resourceLangId == python || resourceLangId == csharp",
           "group": "navigation"
         }
       ],
       "explorer/context": [
         {
-          "command": "python-callgraph.viewFileGraph",
-          "when": "resourceLangId == python",
+          "command": "callgraph.viewFileGraph",
+          "when": "resourceLangId == python || resourceLangId == csharp",
           "group": "navigation"
         }
       ]

@@ -9,16 +9,18 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
   <style>
     :root {
-      --bg-color: #22272e;
-      --card-bg: rgba(45, 51, 59, 0.85);
-      --border-color: #444c56;
-      --text-color: #adbac7;
-      --accent-color: #539bf5;
-      --accent-hover: #79c0ff;
-      --node-local: #2d333b;
-      --node-external: #2d333b;
-      --edge-color: #444c56;
-      --shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      --bg-color: #0b0f19;
+      --card-bg: rgba(15, 23, 42, 0.7);
+      --border-color: rgba(56, 189, 248, 0.2);
+      --text-color: #f1f5f9;
+      --accent-color: #38bdf8;
+      --accent-hover: #7dd3fc;
+      --accent-async: #c084fc;
+      --accent-magic: #fbbf24;
+      --node-local: #1e293b;
+      --node-external: #0f172a;
+      --edge-color: rgba(148, 163, 184, 0.35);
+      --shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
     }
 
     body {
@@ -33,12 +35,13 @@
     }
 
     #cy {
-      width: 100%;
+      width: calc(100% - 340px); /* 우측 340px 타임라인 사이드바 공간 확보 */
       height: 100%;
       position: absolute;
       top: 0;
       left: 0;
       z-index: 1;
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     /* Glassmorphism Control Panel */
@@ -48,24 +51,28 @@
       left: 20px;
       z-index: 10;
       background: var(--card-bg);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 16px;
+      border-radius: 14px;
+      padding: 18px;
       box-shadow: var(--shadow);
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
       width: 280px;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.08);
     }
 
     .panel-title {
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 600;
       margin: 0 0 4px 0;
       letter-spacing: -0.025em;
-      color: #adbac7;
+      color: var(--accent-color);
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .btn-group {
@@ -75,55 +82,59 @@
     }
 
     button {
-      background: #373e47;
-      border: 1px solid var(--border-color);
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.3);
       color: var(--text-color);
       padding: 8px 12px;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
       font-size: 12px;
       font-weight: 500;
-      transition: all 0.2s ease;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
+      gap: 6px;
     }
 
     button:hover {
-      background: #444c56;
-      border-color: #768390;
+      background: rgba(51, 65, 85, 0.9);
+      border-color: var(--accent-hover);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
     }
 
     button.primary {
       background: var(--accent-color);
       border-color: var(--accent-color);
-      color: #22272e;
+      color: #0f172a;
+      font-weight: 600;
     }
 
     button.primary:hover {
       background: var(--accent-hover);
       border-color: var(--accent-hover);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
     }
 
     button.danger {
-      background: #da3633;
-      border-color: #f85149;
+      background: rgba(220, 38, 38, 0.8);
+      border-color: rgba(220, 38, 38, 0.5);
     }
 
     button.danger:hover {
-      background: #f85149;
-      border-color: #f85149;
+      background: #ef4444;
+      border-color: #ef4444;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.35);
     }
 
     .status-info {
       font-size: 11px;
-      color: #768390;
-      background: #1c2128;
-      padding: 8px;
-      border-radius: 6px;
-      line-height: 1.4;
-      border: 1px solid var(--border-color);
+      color: #94a3b8;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 10px;
+      border-radius: 8px;
+      line-height: 1.5;
+      border: 1px solid rgba(148, 163, 184, 0.15);
     }
 
     /* Node details tooltip */
@@ -133,28 +144,31 @@
       left: 20px;
       z-index: 10;
       background: var(--card-bg);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 14px;
+      border-radius: 14px;
+      padding: 16px;
       box-shadow: var(--shadow);
       width: 320px;
       display: none;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.08);
     }
 
     .detail-header {
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 600;
-      color: #539bf5;
-      margin-bottom: 6px;
+      color: var(--accent-color);
+      margin-bottom: 8px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+      padding-bottom: 6px;
     }
 
     .detail-body {
       font-size: 12px;
-      color: #adbac7;
+      color: #cbd5e1;
       word-break: break-all;
-      line-height: 1.5;
+      line-height: 1.6;
     }
 
     /* Connection instruction overlay */
@@ -180,6 +194,271 @@
       from { opacity: 0; transform: translate(-50%, -10px); }
       to { opacity: 1; transform: translate(-50%, 0); }
     }
+
+    /* Sequence Timeline Sidebar Styles */
+    .timeline-panel {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 340px;
+      height: 100vh;
+      background: rgba(11, 15, 25, 0.85);
+      border-left: 1px solid rgba(56, 189, 248, 0.15);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      z-index: 8;
+      padding: 24px 20px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: -10px 0 35px rgba(0, 0, 0, 0.5);
+    }
+
+    .timeline-header {
+      border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+      padding-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .timeline-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #f1f5f9;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .timeline-placeholder {
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.7;
+      margin: auto;
+      text-align: center;
+      max-width: 250px;
+    }
+
+    .timeline-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding-right: 4px;
+      padding-left: 10px;
+      /* 점선 배경선으로 타임라인 라인 형태 연출 */
+      background: linear-gradient(to bottom, transparent 0%, rgba(56, 189, 248, 0.15) 100%);
+      background-size: 2px 100%;
+      background-repeat: no-repeat;
+      background-position: 25px 0;
+    }
+
+    .timeline-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    .timeline-list::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.25);
+      border-radius: 3px;
+    }
+
+    .timeline-card {
+      display: flex;
+      gap: 12px;
+      background: rgba(30, 41, 59, 0.4);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 10px;
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      align-items: center;
+    }
+
+    .timeline-card:hover {
+      background: rgba(30, 41, 59, 0.75);
+      transform: translateX(-4px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    }
+
+    .timeline-card.local:hover {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
+    }
+
+    .timeline-card.magic:hover {
+      border-color: var(--accent-magic);
+      box-shadow: 0 0 10px rgba(251, 191, 36, 0.15);
+    }
+
+    .timeline-card.async:hover {
+      border-color: var(--accent-async);
+      box-shadow: 0 0 10px rgba(192, 132, 252, 0.15);
+    }
+
+    .timeline-card.external:hover {
+      border-color: #64748b;
+      box-shadow: 0 0 10px rgba(100, 116, 139, 0.15);
+    }
+
+    .timeline-card.active {
+      background: rgba(15, 23, 42, 0.85);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    .timeline-card.active.local {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+    }
+
+    .timeline-card.active.magic {
+      border-color: var(--accent-magic);
+      box-shadow: 0 0 12px rgba(251, 191, 36, 0.2);
+    }
+
+    .timeline-card.active.async {
+      border-color: var(--accent-async);
+      box-shadow: 0 0 12px rgba(192, 132, 252, 0.2);
+    }
+
+    .timeline-card.active.external {
+      border-color: #94a3b8;
+    }
+
+    .timeline-badge {
+      width: 24px;
+      height: 24px;
+      border-radius: 12px;
+      background: #1e293b;
+      border: 1.5px solid rgba(148, 163, 184, 0.3);
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      z-index: 2;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+
+    .timeline-card.active .timeline-badge {
+      background: var(--accent-color);
+      border-color: var(--accent-color);
+      color: #0f172a;
+    }
+
+    .timeline-card.active.magic .timeline-badge {
+      background: var(--accent-magic);
+      border-color: var(--accent-magic);
+      color: #0f172a;
+    }
+
+    .timeline-card.active.async .timeline-badge {
+      background: var(--accent-async);
+      border-color: var(--accent-async);
+      color: #0f172a;
+    }
+
+    .timeline-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .timeline-flow {
+      font-size: 12px;
+      font-weight: 500;
+      color: #e2e8f0;
+      word-break: break-all;
+      line-height: 1.5;
+    }
+
+    .timeline-line {
+      font-size: 10px;
+      color: #64748b;
+    }
+
+    .timeline-type-badge {
+      font-size: 8.5px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .timeline-type-badge.magic {
+      background: rgba(251, 191, 36, 0.12);
+      color: #fbbf24;
+      border: 1px solid rgba(251, 191, 36, 0.25);
+    }
+
+    .timeline-type-badge.async {
+      background: rgba(192, 132, 252, 0.12);
+      color: #c084fc;
+      border: 1px solid rgba(192, 132, 252, 0.25);
+    }
+
+    .timeline-type-badge.local {
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .timeline-type-badge.external {
+      background: rgba(148, 163, 184, 0.12);
+      color: #94a3b8;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+    }
+
+    /* 카드 경계 보더 설정 */
+    .timeline-card.magic {
+      border-left: 3px solid #fbbf24;
+    }
+    .timeline-card.async {
+      border-left: 3px solid #c084fc;
+    }
+    .timeline-card.local {
+      border-left: 3px solid #38bdf8;
+    }
+    .timeline-card.external {
+      border-left: 3px solid #475569;
+    }
+
+    /* 파일 그룹 감싸는 컨테이너 */
+    .timeline-file-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: rgba(30, 41, 59, 0.25);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 6px;
+    }
+    
+    /* 파일 그룹 헤더 */
+    .timeline-file-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent-color);
+      padding-bottom: 6px;
+      border-bottom: 1px dashed rgba(148, 163, 184, 0.15);
+      margin-bottom: 4px;
+      letter-spacing: -0.01em;
+    }
+
+    .timeline-file-icon {
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
@@ -192,7 +471,7 @@
   <!-- Controls -->
   <div class="control-panel" id="controlPanel" style="display: flex;">
     <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 2px;">
-      <div class="panel-title">Python Call Graph</div>
+      <div class="panel-title">Call Graph</div>
       <button onclick="togglePanel(false)" style="background: none; border: none; padding: 0 4px; font-size: 18px; cursor: pointer; color: #768390; font-weight: bold; line-height: 1; display: inline-block;" onmouseover="this.style.color='#adbac7'" onmouseout="this.style.color='#768390'">&times;</button>
     </div>
     
@@ -200,6 +479,7 @@
       <button onclick="changeLayout('breadthfirst')" class="primary">계층 정렬</button>
       <button onclick="changeLayout('cose')">분산 정렬</button>
       <button onclick="fitView()">화면 맞춤</button>
+      <button id="resetRootBtn" onclick="resetSequenceRoot()" style="display: none; background: #2f363d; border-color: #f69e5d; color: #f69e5d; font-weight: 600;">시작점 해제</button>
     </div>
 
     <div style="border-bottom: 1px solid var(--border-color); margin: 4px 0;"></div>
@@ -220,6 +500,7 @@
   <div class="detail-panel" id="detailPanel">
     <div class="detail-header" id="detailName">Function Name</div>
     <div class="detail-body" id="detailText">Details...</div>
+    <button id="setRootBtn" onclick="setAsSequenceRoot()" style="margin-top: 12px; width: 100%; background: #539bf5; border-color: #539bf5; color: #22272e; font-weight: 600; display: none;">이 함수를 시작점으로 설정</button>
   </div>
 
   <!-- Connection Toast -->
@@ -228,6 +509,19 @@
   <!-- Graph Canvas -->
   <div id="cy"></div>
 
+  <!-- Sequence Timeline Panel (Glassmorphism Sidebar) -->
+  <div class="timeline-panel" id="timelinePanel">
+    <div class="timeline-header">
+      <span class="timeline-title">⏱️ Sequence Timeline</span>
+    </div>
+    <div class="timeline-placeholder" id="timelinePlaceholder">
+      시작점(Root) 함수를 지정하면 여기에 시간 순서대로 호출 타임라인이 펼쳐집니다.
+    </div>
+    <div class="timeline-list" id="timelineList" style="display: none;">
+      <!-- 동적으로 timeline-card가 삽입될 영역 -->
+    </div>
+  </div>
+
   <script>
     const vscode = acquireVsCodeApi();
     let cy = null;
@@ -235,6 +529,69 @@
     let selectedNode = null;
     let connectMode = false;
     let connectSource = null;
+    let isDraggingNode = false; // 노드 드래그 중인지를 판별하는 상태 변수 추가
+    let sequenceRootId = null;  // 현재 시퀀스의 진입점(Root) 노드 ID
+
+    // 전역 패닝 관리 변수
+    let isPanning = false;
+    let lastPos = { x: 0, y: 0 };
+
+    // 휠클릭 또는 Alt + 마우스 왼쪽 클릭 드래그 전역 마우스 이벤트 리스너 (리소스 누수 및 지터 누적 방지)
+    window.addEventListener('mousedown', function(e) {
+      if (!cy) return;
+      const cyContainer = document.getElementById('cy');
+      if (!cyContainer || !cyContainer.contains(e.target)) return;
+
+      // 휠클릭(가운데 버튼) 또는 Alt + 왼쪽 클릭
+      if (e.button === 1 || (e.button === 0 && e.altKey)) {
+        isPanning = true;
+        lastPos = { x: e.clientX, y: e.clientY };
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
+
+    window.addEventListener('mousemove', function(e) {
+      if (!cy) return;
+
+      // 1. 패닝 중일 때 수동 화면 이동 처리 (휠 클릭 또는 Alt + 왼쪽 드래그)
+      if (isPanning) {
+        const isStillPanning = (e.buttons & 4) || (e.altKey && (e.buttons & 1));
+        if (!isStillPanning) {
+          isPanning = false;
+          return;
+        }
+        
+        const dx = e.clientX - lastPos.x;
+        const dy = e.clientY - lastPos.y;
+        
+        cy.panBy({ x: dx, y: dy });
+        lastPos = { x: e.clientX, y: e.clientY };
+        
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+
+      // 2. 패닝 중이 아닐 때, 단순 마우스 왼쪽 드래그(노드 이동이 아닌 배경 드래그) 차단
+      // Alt 키가 안 눌린 일반 왼쪽 클릭 배경 드래그만 차단하여 캔버스가 마음대로 밀리는 것을 방지
+      if (e.buttons === 1 && !isDraggingNode && !e.altKey) {
+        const cyContainer = document.getElementById('cy');
+        // 이벤트가 캔버스 내부 영역에서 시작되었을 때만 막아서 컨트롤 패널 등 다른 UI의 클릭/드래그를 방해하지 않음
+        if (cyContainer && cyContainer.contains(e.target)) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }
+    }, true);
+
+    window.addEventListener('mouseup', function(e) {
+      if (isPanning && (e.button === 1 || e.button === 0)) {
+        isPanning = false;
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
 
     // 초기 상태 수신 대기
     window.addEventListener('message', event => {
@@ -265,8 +622,12 @@
             uri: node.uri,
             range: node.range,
             isExternal: node.isExternal,
+            isMagic: node.isMagic,
+            isAsync: node.isAsync,
             isGroup: node.isGroup,
-            type: node.type
+            type: node.type,
+            fileName: node.fileName,
+            className: node.className
           }
         };
         if (node.parent) {
@@ -282,6 +643,8 @@
             id: edge.id,
             source: edge.source,
             target: edge.target,
+            order: edge.order,
+            orderLabel: edge.orderLabel,
             callRanges: edge.callRanges
           }
         });
@@ -290,68 +653,81 @@
       cy = cytoscape({
         container: document.getElementById('cy'),
         elements: cyElements,
-        wheelSensitivity: 0.15, // 휠 줌 감도 최적화 (기본값 1.0에서 대폭 낮춰 부드럽게 스크롤)
-        userPanningEnabled: false, // 왼쪽 클릭 드래그 패닝 비활성화 (휠 클릭 드래그로만 이동하게 제어)
+        zoomingEnabled: true,       // 줌 기능 자체 활성화 보장
+        userZoomingEnabled: true,   // 사용자 마우스 휠을 통한 줌 활성화 보장
+        wheelSensitivity: 0.3,      // 휠 줌 감도를 0.3으로 조율하여 부드럽고 명확한 확대/축소 제공
+        userPanningEnabled: true,  // 기본 패닝 기능을 켜두어야 휠 줌 시 내부 자동 패닝이 가능해짐
         boxSelectionEnabled: false, // 왼쪽 클릭 드래그 다중선택 비활성화
         style: [
-          // 1. 일반 자식 함수 노드 스타일 (GitHub Dark Dimmed 스타일)
+          // 1. 일반 자식 함수 노드 스타일
           {
             selector: 'node[!isGroup]',
             style: {
               'label': 'data(label)',
               'text-valign': 'center',
               'text-halign': 'center',
-              'color': '#adbac7',
+              'color': '#f1f5f9',
               'font-size': '11px',
               'font-family': 'Inter, sans-serif',
-              'font-weight': '500',
-              'background-color': '#2d333b',
-              'width': '120px',
-              'height': '38px',
+              'font-weight': '600',
+              'background-color': '#1e293b',
+              'width': '130px',
+              'height': '40px',
               'shape': 'round-rectangle',
-              'border-width': '1.5px',
+              'border-width': '1.8px',
               'border-color': function(ele) {
-                return ele.data('isExternal') ? '#444c56' : '#539bf5'; // 로컬은 깃허브 블루, 외부는 딤드 보더
+                if (ele.data('isMagic')) return '#fbbf24'; // 골드 네온
+                if (ele.data('isAsync')) return '#c084fc'; // 퍼플 네온
+                return ele.data('isExternal') ? '#475569' : '#38bdf8'; // 로컬은 네온 블루
               },
-              'overlay-padding': '3px',
-              'transition-property': 'background-color, border-color',
-              'transition-duration': '0.15s'
+              'shadow-blur': 10,
+              'shadow-color': function(ele) {
+                if (ele.data('isMagic')) return '#fbbf24';
+                if (ele.data('isAsync')) return '#c084fc';
+                return ele.data('isExternal') ? 'transparent' : '#38bdf8';
+              },
+              'shadow-opacity': 0.35,
+              'shadow-offset-y': 0,
+              'overlay-padding': '4px',
+              'transition-property': 'background-color, border-color, shadow-color',
+              'transition-duration': '0.2s'
             }
           },
           // 2. 부모 그룹 노드 전체 (Compound Nodes) 공통 스타일 (크기 축소 및 내부 정렬)
           {
             selector: 'node[?isGroup]',
             style: {
-              'background-opacity': 1.0, // 불투명하게 채워 자식 노드와 확실한 대비 형성
+              'background-opacity': 0.65, // 반투명 다크 그레이로 세련되게
+              'background-color': '#0f172a',
               'label': 'data(label)',
               'text-valign': 'top',
               'text-halign': 'center', // 가로 중앙 정렬로 변경하여 텍스트 길이에 무관하게 내부 상단 안착
-              'color': '#768390',
-              'font-size': '9.5px', // 더 깔끔하고 미니멀하게 글자 크기 축소
+              'color': '#94a3b8',
+              'font-size': '10px', // 더 깔끔하고 미니멀하게 글자 크기 축소
               'font-family': 'Inter, sans-serif',
-              'font-weight': '600',
+              'font-weight': '700',
               'border-width': '1.5px', // 테두리를 명확하게
-              'padding': '24px', // 패딩을 적절히 조율하여 내부 자식 노드와의 여백 확보
+              'padding': '28px', // 패딩을 적절히 조율하여 내부 자식 노드와의 여백 확보
               'text-margin-y': '12px' // 윗선 테두리 아래로 깔끔하게 안착 (상자 내부)
             }
           },
-          // 3. 클래스 소속 부모 노드 스타일 커스텀 (GitHub Orange 포인트)
+          // 3. 클래스 소속 부모 노드 스타일 커스텀
           {
             selector: 'node[type="class"]',
             style: {
-              'color': '#f69e5d',
-              'border-color': 'rgba(246, 158, 93, 0.45)', // 기존 오렌지 테두리 유지
-              'background-color': '#1a1e24', // 어둡고 불투명한 배경색으로 시선 분산 방지
+              'color': '#fb923c',
+              'border-color': 'rgba(251, 146, 60, 0.4)',
+              'background-color': '#1c1917',
               'border-style': 'solid'
             }
           },
-          // 4. 파일 소속 부모 노드 스타일 커스텀 (차분한 무채색 Slate/Zinc)
+          // 4. 파일 소속 부모 노드 스타일 커스텀
           {
             selector: 'node[type="file"]',
             style: {
-              'color': '#adbac7',
-              'border-color': '#444c56', // 기존 그레이 테두리 유지
-              'background-color': '#14181d', // 한층 더 어두운 불투명 배경색으로 파일 경계 명확화
+              'color': '#cbd5e1',
+              'border-color': '#475569',
+              'background-color': '#0f172a',
               'border-style': 'dashed'
             }
           },
@@ -359,27 +735,48 @@
             selector: 'node:selected',
             style: {
               'border-width': '2.5px',
-              'border-color': '#79c0ff',
-              'background-color': '#22272e'
+              'border-color': '#38bdf8',
+              'background-color': '#0f172a',
+              'shadow-blur': 15,
+              'shadow-color': '#38bdf8',
+              'shadow-opacity': 0.6
             }
           },
           {
             selector: 'edge',
             style: {
               'width': 1.8,
-              'line-color': 'rgba(118, 131, 144, 0.3)',
-              'target-arrow-color': 'rgba(118, 131, 144, 0.35)',
+              'line-color': 'rgba(148, 163, 184, 0.3)',
+              'target-arrow-color': 'rgba(148, 163, 184, 0.3)',
               'target-arrow-shape': 'triangle',
-              'curve-style': 'bezier',
-              'arrow-scale': 1.0
+              'curve-style': 'bezier',          // 다중 엣지 겹침 방지 필수
+              'control-point-step-size': 28,    // 겹치는 선 간의 간격 벌리기
+              'arrow-scale': 0.85,
+              'label': 'data(orderLabel)',      // ① [L. 12] 같은 호출 순서 표기
+              'font-size': '8.5px',
+              'font-family': 'Inter, sans-serif',
+              'font-weight': '600',
+              'color': '#94a3b8',
+              'text-background-opacity': 0.9,   // 글자 배경 불투명화
+              'text-background-color': '#0b0f19', // 테마 배경색과 매칭
+              'text-background-padding': '3px',
+              'text-background-shape': 'round-rectangle',
+              'text-rotation': 'autorotate',    // 연결선 각도에 맞춰 텍스트 자동 회전
+              'transition-property': 'line-color, width',
+              'transition-duration': '0.15s'
             }
           },
           {
             selector: 'edge:selected',
             style: {
-              'width': 3,
-              'line-color': '#539bf5',
-              'target-arrow-color': '#539bf5'
+              'width': 2.8,
+              'line-color': '#38bdf8',
+              'target-arrow-color': '#38bdf8',
+              'color': '#f1f5f9',
+              'text-background-color': '#0f172a',
+              'shadow-blur': 8,
+              'shadow-color': '#38bdf8',
+              'shadow-opacity': 0.4
             }
           }
         ],
@@ -391,52 +788,39 @@
         }
       });
 
-      // 휠클릭(가운데 버튼) 드래그로 화면 패닝(이동) 수동 구현 (Delta Panning 구조 적용)
-      const cyContainer = document.getElementById('cy');
-      let isPanning = false;
-      let lastPos = { x: 0, y: 0 };
-
-      cyContainer.addEventListener('mousedown', function(e) {
-        if (e.button === 1) { // 마우스 휠클릭 (가운데 버튼)
-          isPanning = true;
-          lastPos = { x: e.clientX, y: e.clientY };
-          // 자동 스크롤 팝업 및 기본 드래그 기능 차단
-          e.preventDefault();
-          e.stopPropagation();
-        }
-      }, true); // 캡처링 단계에서 강제로 포착
-
-      window.addEventListener('mousemove', function(e) {
-        if (isPanning) {
-          // 마우스 가운데 버튼(buttons 값 4)이 여전히 눌려있는지 실시간 감시 (안전장치)
-          if (!(e.buttons & 4)) {
-            isPanning = false;
-            return;
-          }
-          
-          const dx = e.clientX - lastPos.x;
-          const dy = e.clientY - lastPos.y;
-          
-          // 매 틱마다 panBy로 델타 값을 흘려주어 줌 배율이 보정된 극도의 부드러운 이동 제공 (Jitter 원천 차단)
-          cy.panBy({ x: dx, y: dy });
-          
-          // 마지막 마우스 위치 갱신
-          lastPos = { x: e.clientX, y: e.clientY };
-          
-          e.preventDefault();
-          e.stopPropagation();
-        }
-      }, true);
-
-      window.addEventListener('mouseup', function(e) {
-        if (isPanning && e.button === 1) {
-          isPanning = false;
-          e.preventDefault();
-          e.stopPropagation();
-        }
-      }, true);
-
       setupEvents();
+
+      // 자동 루트(Default Root) 지정 및 필터 적용
+      let defaultRoot = null;
+      
+      // 'main' 노드 탐색
+      const mainNode = cy.nodes().filter(node => {
+        const label = node.data('label') || '';
+        return label === 'main' || label.startsWith('main ') || label.startsWith('main(');
+      });
+      
+      if (mainNode.length > 0) {
+        defaultRoot = mainNode[0];
+      } else {
+        // 'main'이 없으면, in-degree가 0이고 out-degree가 1 이상인 노드 탐색
+        const entryNodes = cy.nodes().filter(node => {
+          if (node.data('isGroup')) return false;
+          return node.indegree(false) === 0 && node.outdegree(false) > 0;
+        });
+        if (entryNodes.length > 0) {
+          defaultRoot = entryNodes[0];
+        }
+      }
+      
+      if (defaultRoot) {
+        sequenceRootId = defaultRoot.id();
+        document.getElementById('resetRootBtn').style.display = 'inline-flex';
+        applySequenceFilter();
+      } else {
+        // 루트가 될 만한 노드가 전혀 없는 경우 기본 레이아웃 수행
+        changeLayout('breadthfirst');
+        fitView();
+      }
     }
 
     function addNodesToGraph(newNodes, newEdges) {
@@ -454,8 +838,12 @@
               uri: node.uri,
               range: node.range,
               isExternal: node.isExternal,
+              isMagic: node.isMagic,
+              isAsync: node.isAsync,
               isGroup: node.isGroup,
-              type: node.type
+              type: node.type,
+              fileName: node.fileName,
+              className: node.className
             }
           };
           if (node.parent) {
@@ -477,8 +865,12 @@
               uri: node.uri,
               range: node.range,
               isExternal: node.isExternal,
+              isMagic: node.isMagic,
+              isAsync: node.isAsync,
               isGroup: node.isGroup,
-              type: node.type
+              type: node.type,
+              fileName: node.fileName,
+              className: node.className
             }
           };
           if (node.parent) {
@@ -496,6 +888,8 @@
               id: edge.id,
               source: edge.source,
               target: edge.target,
+              order: edge.order,
+              orderLabel: edge.orderLabel,
               callRanges: edge.callRanges
             }
           });
@@ -503,16 +897,28 @@
       });
 
       // 새로운 노드가 들어왔으므로 레이아웃을 다시 실행하여 정렬
-      cy.layout({
-        name: 'breadthfirst',
-        directed: true,
-        padding: 50,
-        animate: true,
-        animationDuration: 500
-      }).run();
+      if (sequenceRootId) {
+        applySequenceFilter();
+      } else {
+        cy.layout({
+          name: 'breadthfirst',
+          directed: true,
+          padding: 50,
+          animate: true,
+          animationDuration: 500
+        }).run();
+      }
     }
 
     function setupEvents() {
+      // 노드 드래그(이동) 감지하여 배경 드래그 패닝과 구분
+      cy.on('grab', 'node', function() {
+        isDraggingNode = true;
+      });
+      cy.on('free', 'node', function() {
+        isDraggingNode = false;
+      });
+
       // 노드 클릭 시 디테일 패널 노출
       cy.on('tap', 'node', function(evt) {
         const node = evt.target;
@@ -537,6 +943,7 @@
             <strong>설명:</strong> 이 경계 상자 내부의 함수들은 본 영역에 소속되어 있습니다.
           `;
           document.getElementById('detailPanel').style.display = 'block';
+          document.getElementById('setRootBtn').style.display = 'none'; // 부모 노드는 시작점 지정 불가능
           return;
         }
 
@@ -550,6 +957,7 @@
           <strong>모듈 타입:</strong> ${data.isExternal ? '외부 라이브러리 / 빌트인' : '프로젝트 내부 함수'}
         `;
         document.getElementById('detailPanel').style.display = 'block';
+        document.getElementById('setRootBtn').style.display = 'block'; // 일반 함수 노드일 때 시작점 지정 버튼 활성화
       });
 
       // 엣지 클릭 시 호출 정보 패널 노출
@@ -587,6 +995,7 @@
         document.getElementById('detailName').innerText = 'Connection Flow';
         document.getElementById('detailText').innerHTML = detailHtml;
         document.getElementById('detailPanel').style.display = 'block';
+        document.getElementById('setRootBtn').style.display = 'none'; // 엣지는 시작점 지정 불가능
       });
 
       // 캔버스 빈 곳 클릭 시 선택 해제 및 패널 닫기
@@ -595,6 +1004,7 @@
           selectedNode = null;
           document.getElementById('deleteBtn').disabled = true;
           document.getElementById('detailPanel').style.display = 'none';
+          document.getElementById('setRootBtn').style.display = 'none'; // 패널 닫힐 때 버튼 숨김
           if (connectMode) {
             cancelConnectMode();
           }
@@ -641,12 +1051,17 @@
     // 레이아웃 변경 기능
     function changeLayout(layoutName) {
       if (!cy) return;
-      cy.layout({
+      let layoutConfig = {
         name: layoutName,
         animate: true,
         animationDuration: 600,
         padding: 50
-      }).run();
+      };
+      // breadthfirst(계층형) 레이아웃일 때 시작점이 정의되어 있다면 해당 노드를 최상단(root)으로 배치
+      if (layoutName === 'breadthfirst' && sequenceRootId) {
+        layoutConfig.roots = cy.getElementById(sequenceRootId);
+      }
+      cy.layout(layoutConfig).run();
     }
 
     // 화면 크기에 맞춤
@@ -726,6 +1141,247 @@
         panel.style.display = 'none';
         openBtn.style.display = 'inline-flex';
       }
+    }
+
+    // 시퀀스 다이어그램 흐름 제어 함수군
+    function setAsSequenceRoot() {
+      if (!selectedNode || selectedNode.isEdge() || selectedNode.data('isGroup')) return;
+      
+      sequenceRootId = selectedNode.id();
+      
+      // 시작점 해제 버튼 노출
+      document.getElementById('resetRootBtn').style.display = 'inline-flex';
+      
+      // 필터 적용
+      applySequenceFilter();
+    }
+
+    function resetSequenceRoot() {
+      sequenceRootId = null;
+      
+      // UI 해제
+      document.getElementById('resetRootBtn').style.display = 'none';
+      document.getElementById('setRootBtn').style.display = 'none';
+      
+      // 타임라인 초기화
+      updateTimelineView(null);
+      
+      // 모든 요소 복구 및 레이아웃 재배열
+      if (cy) {
+        cy.elements().show();
+        changeLayout('breadthfirst');
+        cy.fit(null, 50);
+      }
+    }
+
+    function applySequenceFilter() {
+      if (!cy || !sequenceRootId) return;
+
+      const rootNode = cy.getElementById(sequenceRootId);
+      if (rootNode.length === 0) return;
+
+      // 루트 노드로부터 도달 가능한 경로상 모든 노드/엣지 BFS 수집
+      const bfs = cy.elements().bfs({
+        roots: rootNode,
+        directed: true
+      });
+
+      const pathElements = bfs.path;
+      const allAllowed = pathElements.union(rootNode);
+      
+      // 부모 그룹 노드도 함께 노출시켜 깨짐 방지
+      const parentGroups = allAllowed.ancestors();
+      const finalVisible = allAllowed.union(parentGroups);
+
+      // 필터링 적용
+      cy.elements().hide();
+      finalVisible.show();
+
+      // 우측 시퀀스 타임라인 패널 갱신
+      updateTimelineView(finalVisible);
+    }
+
+    function getDFSTraversal(rootId, visibleElements) {
+      const result = [];
+      const visitedNodes = new Set();
+      let stepCounter = 1;
+
+      function dfs(currentNodeId, depth) {
+        visitedNodes.add(currentNodeId);
+
+        const currentNode = cy.getElementById(currentNodeId);
+        if (currentNode.length === 0) return;
+
+        // 현재 노드에서 나가는 모든 visible 엣지 수집
+        const outEdges = currentNode.outgoers('edge').filter(e => {
+          return (!visibleElements || visibleElements.contains(e)) && e.visible();
+        });
+
+        // 엣지들을 order 기준 오름차순 정렬
+        const sortedOutEdges = outEdges.toArray().sort((a, b) => {
+          return (a.data('order') || 0) - (b.data('order') || 0);
+        });
+
+        for (const edge of sortedOutEdges) {
+          const targetNode = edge.target();
+          const targetId = targetNode.id();
+
+          result.push({
+            edge: edge,
+            depth: depth,
+            step: stepCounter++
+          });
+
+          // 타겟 노드를 아직 방문하지 않았다면 재귀 탐색
+          if (!visitedNodes.has(targetId)) {
+            dfs(targetId, depth + 1);
+          }
+        }
+      }
+
+      dfs(rootId, 1);
+      return result;
+    }
+
+    // 호출 순서에 따라 우측 사이드바에 수직 타임라인 카드를 동적으로 렌더링하고 애니메이션을 매핑하는 함수
+    function updateTimelineView(visibleElements) {
+      const timelinePlaceholder = document.getElementById('timelinePlaceholder');
+      const timelineList = document.getElementById('timelineList');
+      
+      timelineList.innerHTML = '';
+      
+      if (!sequenceRootId || !visibleElements) {
+        timelinePlaceholder.style.display = 'block';
+        timelineList.style.display = 'none';
+        return;
+      }
+      
+      // DFS 트리 순회 수행
+      const traversal = getDFSTraversal(sequenceRootId, visibleElements);
+      
+      if (traversal.length === 0) {
+        timelinePlaceholder.style.display = 'block';
+        timelinePlaceholder.innerText = '선택한 시작점 함수에서 하위로 뻗어가는 호출 구조가 존재하지 않습니다.';
+        timelineList.style.display = 'none';
+        return;
+      }
+      
+      timelinePlaceholder.style.display = 'none';
+      timelineList.style.display = 'flex';
+      
+      traversal.forEach(item => {
+        const edge = item.edge;
+        const depth = item.depth;
+        const step = item.step;
+        
+        const sourceNode = edge.source();
+        const sourceData = sourceNode.data();
+        const sourceClass = sourceData.className;
+        const sourceFuncName = sourceClass ? `${sourceClass}.${sourceData.label}` : sourceData.label;
+
+        const targetNode = edge.target();
+        const targetData = targetNode.data();
+        const targetClass = targetData.className;
+        const targetDisplayName = targetClass ? `${targetClass}.${targetData.label}` : targetData.label;
+
+        const lineInfo = edge.data('callRanges') && edge.data('callRanges')[0] 
+          ? `Line ${edge.data('callRanges')[0].startLine + 1}` 
+          : '정보 없음';
+          
+        let cardType = 'local';
+        let cardTypeBadge = 'Method';
+        let neonColor = '#38bdf8';
+        
+        if (targetData.isMagic) {
+          cardType = 'magic';
+          cardTypeBadge = '🔮 Magic';
+          neonColor = '#fbbf24';
+        } else if (targetData.isAsync) {
+          cardType = 'async';
+          cardTypeBadge = '⚡ Async';
+          neonColor = '#c084fc';
+        } else if (targetData.isExternal) {
+          cardType = 'external';
+          cardTypeBadge = '📦 Ext';
+          neonColor = '#64748b';
+        }
+
+        const card = document.createElement('div');
+        card.className = `timeline-card ${cardType}`;
+        card.id = `timeline-card-${edge.id().replace(/[^a-zA-Z0-9]/g, '_')}`;
+        
+        // 깊이(depth)에 따라 들여쓰기 설정 (depth당 20px씩)
+        const indent = (depth - 1) * 20;
+        card.style.marginLeft = `${indent}px`;
+        
+        // depth가 1보다 크면 계층 표시 기호 (└─) 추가
+        const prefix = depth > 1 ? `<span style="color: #64748b; margin-right: 4px; font-family: monospace; font-weight: bold;">└─</span>` : '';
+
+        const orderVal = edge.data('order') || step;
+
+        card.innerHTML = `
+          <div class="timeline-badge">${orderVal}</div>
+          <div class="timeline-content">
+            <div class="timeline-flow" style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+              ${prefix}
+              <span style="color: #94a3b8; font-size: 11px;">${sourceFuncName}</span>
+              <span style="color: #64748b; font-size: 10px;">➔</span>
+              <strong>${targetDisplayName}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+              <span class="timeline-line">${lineInfo}</span>
+              <span class="timeline-type-badge ${cardType}">${cardTypeBadge}</span>
+            </div>
+          </div>
+        `;
+        
+        // 카드 클릭 시 캔버스 상의 해당 엣지 강조 및 포커싱 애니메이션 연동
+        card.onclick = () => {
+          document.querySelectorAll('.timeline-card').forEach(c => c.classList.remove('active'));
+          card.classList.add('active');
+          
+          cy.$(':selected').unselect();
+          edge.select();
+          
+          // 깜빡임 마이크로 인터랙션 애니메이션 (플래시 피드백)
+          edge.animate({
+            style: {
+              'line-color': '#ffffff',
+              'width': 4.5
+            }
+          }, {
+            duration: 120,
+            complete: () => {
+              edge.animate({
+                style: {
+                  'line-color': neonColor,
+                  'width': 2.8
+                }
+              }, { duration: 180 });
+            }
+          });
+          
+          // 화면 초점 맞추기
+          cy.animate({
+            fit: {
+              eles: edge.union(edge.source()).union(edge.target()),
+              padding: 100
+            },
+            duration: 400
+          });
+        };
+        
+        // 카드 더블클릭 시 해당 코드 라인으로 VS Code 편집기 점프 연동
+        card.ondblclick = () => {
+          const ranges = edge.data('callRanges');
+          if (ranges && ranges.length > 0) {
+            const r = ranges[0];
+            jumpToLocation(edge.source().data('uri'), r.startLine, r.startCharacter, r.endLine, r.endCharacter);
+          }
+        };
+        
+        timelineList.appendChild(card);
+      });
     }
   </script>
 </body>

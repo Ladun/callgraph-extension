@@ -1,14 +1,14 @@
-# Python Call Graph Visualizer
+# Call Graph Visualizer
 
-VS Code에서 파이썬 코드의 함수 호출 관계(Call Graph)를 대화형 그래프로 시각화해주는 확장 프로그램입니다.
+An interactive VS Code extension that visualizes function call graphs using the VS Code LSP Call Hierarchy API.
 
-## 주요 기능
-- **계층/분산 레이아웃**: 호출 관계를 한눈에 보여주는 계층형 및 컴팩트한 분산 레이아웃 지원
-- **마우스 휠클릭 화면 이동**: 휠을 누른 상태로 캔버스를 편리하게 드래그하여 패닝 가능
-- **LSP 및 정적 분석 지원**: Python LSP를 활용한 정밀한 분석과 Fallback 정적 파싱 지원
-- **코드 바로 가기**: 노드나 관계선 더블 클릭 시 소스 코드의 실제 해당 위치로 즉시 이동
-- **GitHub Dark Dimmed 테마**: 눈에 피로를 덜어주는 어두운 테마 감성의 모던한 디자인
+## Features
+- **Hierarchical & Distributed Layouts**: Supports clean top-down hierarchical layouts as well as compact distributed layouts.
+- **Mouse Wheel Drag Panning**: Navigate the canvas smoothly by dragging with the middle mouse button (wheel click).
+- **LSP & Static Analysis**: Precision parsing using the VS Code LSP Call Hierarchy, with a static regex-based parser as a fallback.
+- **Jump to Source Code**: Double-click on nodes or connection edges to navigate directly to the respective location in the source code.
+- **GitHub Dark Dimmed Theme**: Eye-friendly, modern dark dimmed aesthetics matching GitHub's color scheme.
 
-## 사용 방법
-1. 파이썬 파일(`.py`)을 엽니다.
-2. 에디터 우측 상단의 `Generate: Call Graph` 아이콘을 클릭하거나 우클릭 메뉴를 통해 호출 그래프를 생성합니다.
+## How to Use
+1. Open a source file (e.g., Python `.py`).
+2. Click the `Generate: Call Graph` icon in the editor title menu (top-right), or right-click in the editor and select `Generate: Call Graph` from the context menu.
